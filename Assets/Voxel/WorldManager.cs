@@ -2,43 +2,46 @@
 // File: WorldManager.cs
 // Local: Scripts/Managers/WorldManager.cs
 //
-// Responsável por controlar a geração, carregamento e descarregamento de chunks
-// ao redor do jogador, comunicando-se com o sistema de LOD e demais módulos.
-// Agora inclui um sistema de seed integrado para permitir a regeneração do mundo,
-// e a escolha de biomas via BiomeManager.
+// Gerencia a geração de chunks, mas agora também controla regiões de bioma
+// de tamanho "regionSize x regionSize" (em chunks), permitindo transição suave.
 // -------------------------------------------------------------------------
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class WorldManager : MonoBehaviour
 {
-    [Header("Referências")]
-    public SettingsVO settings;             // Referência às configurações globais (ScriptableObject ou similar)
-    public Transform player;                // Transform do jogador
-    public ChunkPool chunkPool;             // Referência ao pool de chunks
-    public TerrainNoise terrainNoise;       // Referência à classe de ruído para geração
+    [Header("Referências Principais")]
+    public SettingsVO settings;      // Configurações (chunkSize, chunkHeight, etc.)
+    public Transform player;         // Jogador, para saber que chunks carregar
+    public ChunkPool chunkPool;      // Pool de chunks
+    public TerrainNoise terrainNoise;// Ruído base (Perlin, etc.)
+    public BiomeManager biomeManager;// Gerencia a lista de biomas e raridades
 
-    // [BIOMA] Referência para escolher biomas
-    public BiomeManager biomeManager;
+    [Header("Seed")]
+    public int worldSeed = 0;
+    private int currentSeed;
 
-    // Armazena os chunks ativos usando um Dictionary para acesso rápido via coordenada (x,z).
-    private Dictionary<Vector2Int, Chunk> activeChunks = new Dictionary<Vector2Int, Chunk>();
-
-    // Intervalo de atualização para carregar/descarregar chunks, evitando checar todo frame.
-    [Header("Frequência de Atualização")]
+    [Header("Carregamento de Chunks")]
     public float updateInterval = 0.5f;
     private float timer;
+    private Dictionary<Vector2Int, Chunk> activeChunks = new Dictionary<Vector2Int, Chunk>();
 
-    [Header("Seed do Mundo")]
-    public int worldSeed = 0;              // Seed principal do mundo
-    private int currentSeed;               // Rastreia a seed atual em uso
+    // ---------------------------------------------------
+    // REGIÕES DE BIOMA
+    // ---------------------------------------------------
+    [Header("Tamanho da Região (em Chunks)")]
+    [Tooltip("Por exemplo, 12 significa que cada região cobre 12x12 chunks.")]
+    public int regionSize = 12;
 
+    // Guarda o bioma principal para cada região (regionCoord)
+    private Dictionary<Vector2Int, BiomeDefinition> regionBiomeCache = new Dictionary<Vector2Int, BiomeDefinition>();
+
+    // ---------------------------------------------------
+    // MÉTODOS UNITY
+    // ---------------------------------------------------
     private void Start()
     {
-        // Define o seed inicial a partir da variável `worldSeed`.
         SetSeed(worldSeed);
-
-        // Inicia a geração inicial do mundo.
         InitializeWorld();
     }
 
@@ -52,66 +55,52 @@ public class WorldManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Configura o mundo inicial e gera os primeiros chunks.
-    /// </summary>
+    // ---------------------------------------------------
+    // INICIALIZA / SEED
+    // ---------------------------------------------------
     private void InitializeWorld()
     {
         if (!player) return;
         UpdateChunksAroundPlayer();
     }
 
-    /// <summary>
-    /// Atualiza e/ou regenera o mundo com base na seed fornecida.
-    /// Esse método pode ser chamado a qualquer momento para mudar a seed em runtime.
-    /// </summary>
-    /// <param name="newSeed">Nova seed para o mundo.</param>
     public void SetSeed(int newSeed)
     {
-        // Atualiza a seed do TerrainNoise e o campo de controle local.
         currentSeed = newSeed;
         if (terrainNoise != null)
         {
             terrainNoise.seed = newSeed;
         }
 
-        // Caso você queira reinicializar completamente a geração (descarregar e recarregar chunks):
         RegenerateWorld();
     }
 
-    /// <summary>
-    /// Limpa todos os chunks atuais e força a recarga com a nova seed.
-    /// </summary>
     private void RegenerateWorld()
     {
-        // Remove todos os chunks ativos (devolvendo-os para o pool).
+        // Desativa todos os chunks existentes
         List<Vector2Int> coordsParaLiberar = new List<Vector2Int>(activeChunks.Keys);
         foreach (var coord in coordsParaLiberar)
         {
             ReleaseChunk(coord);
         }
 
-        // Reinicializa o mundo com a seed já definida.
+        // Limpa o cache de biomas por região
+        regionBiomeCache.Clear();
+
         InitializeWorld();
     }
 
-    /// <summary>
-    /// Identifica os chunks que precisam estar ativos em torno do jogador e
-    /// chama o sistema de criação/remoção de chunks.
-    /// </summary>
+    // ---------------------------------------------------
+    // ATUALIZAR CHUNKS EM TORNO DO JOGADOR
+    // ---------------------------------------------------
     private void UpdateChunksAroundPlayer()
     {
         if (!player || !settings) return;
 
-        // Coordenadas do chunk em que o jogador está.
         Vector2Int playerChunkCoord = GetChunkCoordFromPosition(player.position);
-
-        // Lista de todos os chunks que deverão estar ativos.
         List<Vector2Int> neededCoords = new List<Vector2Int>();
 
-        // Determina o raio de chunks em cada direção.
         int loadRange = settings.viewDistanceInChunks;
-
         for (int x = -loadRange; x <= loadRange; x++)
         {
             for (int z = -loadRange; z <= loadRange; z++)
@@ -121,7 +110,6 @@ public class WorldManager : MonoBehaviour
             }
         }
 
-        // Ativa ou cria os chunks necessários.
         foreach (Vector2Int coord in neededCoords)
         {
             if (!activeChunks.ContainsKey(coord))
@@ -130,69 +118,120 @@ public class WorldManager : MonoBehaviour
             }
         }
 
-        // Desativa ou libera chunks que não são mais necessários.
-        List<Vector2Int> keysToRemove = new List<Vector2Int>();
+        List<Vector2Int> toRemove = new List<Vector2Int>();
         foreach (var kvp in activeChunks)
         {
             if (!neededCoords.Contains(kvp.Key))
             {
-                keysToRemove.Add(kvp.Key);
+                toRemove.Add(kvp.Key);
             }
         }
 
-        foreach (var coord in keysToRemove)
+        foreach (var c in toRemove)
         {
-            ReleaseChunk(coord);
+            ReleaseChunk(c);
         }
     }
 
-    /// <summary>
-    /// Instancia ou obtém do pool um novo chunk, configura-o e armazena no dicionário.
-    /// Agora também escolhe um bioma para o chunk de forma aleatória.
-    /// </summary>
     private void CreateChunk(Vector2Int coord)
     {
-        // Obtém um GameObject de chunk do pool.
         GameObject chunkObj = chunkPool.GetChunkObject();
         chunkObj.name = $"Chunk_{coord.x}_{coord.y}";
         chunkObj.transform.SetParent(this.transform);
 
+        // Cria o chunk
         Chunk chunkComponent = chunkObj.GetComponent<Chunk>();
 
-        // [BIOMA] Escolhemos um bioma do BiomeManager
-        BiomeDefinition chosenBiome = null;
-        if (biomeManager != null)
-        {
-            chosenBiome = biomeManager.PickBiome();
-        }
-
-        // Inicializa o chunk com o bioma escolhido
-        chunkComponent.InitializeChunk(coord, settings, terrainNoise, chosenBiome);
+        // Gera dados do chunk usando a nova função "GenerateChunkData" que
+        // chamará de volta este WorldManager para saber do bioma (smooth).
+        chunkComponent.InitializeChunk(coord, settings, terrainNoise, this);
 
         activeChunks.Add(coord, chunkComponent);
     }
 
-    /// <summary>
-    /// Devolve o chunk ao pool e remove-o da lista de ativos.
-    /// </summary>
     private void ReleaseChunk(Vector2Int coord)
     {
         if (activeChunks.ContainsKey(coord))
         {
-            Chunk chunkComponent = activeChunks[coord];
-            chunkPool.ReleaseChunkObject(chunkComponent.gameObject);
+            Chunk c = activeChunks[coord];
+            chunkPool.ReleaseChunkObject(c.gameObject);
             activeChunks.Remove(coord);
         }
     }
 
-    /// <summary>
-    /// Converte a posição do mundo em coordenadas de chunk (x,z).
-    /// </summary>
     private Vector2Int GetChunkCoordFromPosition(Vector3 position)
     {
-        int chunkSize = settings.chunkSize;
-        int x = Mathf.FloorToInt(position.x / chunkSize);
-        int z = Mathf.FloorToInt(position.z / chunkSize);
+        int cs = settings.chunkSize;
+        int x = Mathf.FloorToInt(position.x / cs);
+        int z = Mathf.FloorToInt(position.z / cs);
         return new Vector2Int(x, z);
+    }
+
+    // ---------------------------------------------------
+    // CÁLCULO DE BIOMA (transição suave)
+    // ---------------------------------------------------
+
+    /// <summary>
+    /// Retorna o "fator de amplitude" do bioma para um ponto (worldX, worldZ),
+    /// fazendo interpolação bilinear entre até 4 regiões vizinhas.
+    /// </summary>
+    public float GetBiomeAmplitudeAt(float worldX, float worldZ)
+    {
+        // 1) Dimensão de cada região em coordenadas de mundo
+        float regionWorldSize = regionSize * settings.chunkSize;
+
+        // 2) Coordenada fracionária dentro da região
+        float rx = worldX / regionWorldSize;
+        float rz = worldZ / regionWorldSize;
+
+        // 3) Coordenada "inteira" (qual região) e a fração local
+        int regionX0 = Mathf.FloorToInt(rx);
+        int regionZ0 = Mathf.FloorToInt(rz);
+
+        float fracX = rx - regionX0; // valor [0..1) dentro da célula de região
+        float fracZ = rz - regionZ0;
+
+        // Coordenadas das 4 "células" (regiões) envolvidas
+        Vector2Int r00 = new Vector2Int(regionX0, regionZ0);
+        Vector2Int r10 = new Vector2Int(regionX0 + 1, regionZ0);
+        Vector2Int r01 = new Vector2Int(regionX0, regionZ0 + 1);
+        Vector2Int r11 = new Vector2Int(regionX0 + 1, regionZ0 + 1);
+
+        // Obtém amplitude de cada região
+        float a00 = GetBiomeAmplitudeForRegion(r00);
+        float a10 = GetBiomeAmplitudeForRegion(r10);
+        float a01 = GetBiomeAmplitudeForRegion(r01);
+        float a11 = GetBiomeAmplitudeForRegion(r11);
+
+        // Interpolação bilinear
+        float a0 = Mathf.Lerp(a00, a10, fracX); // interpolação horizontal (entre r00 e r10)
+        float a1 = Mathf.Lerp(a01, a11, fracX); // interpolação horizontal (entre r01 e r11)
+        float finalAmplitude = Mathf.Lerp(a0, a1, fracZ); // interpolação vertical
+
+        return finalAmplitude;
+    }
+
+    /// <summary>
+    /// Retorna a amplitude definida pelo bioma principal de uma dada região (regionCoord).
+    /// Se a região ainda não tiver bioma no cache, escolhe agora e armazena.
+    /// </summary>
+    private float GetBiomeAmplitudeForRegion(Vector2Int regionCoord)
+    {
+        // Tenta pegar do cache
+        if (!regionBiomeCache.ContainsKey(regionCoord))
+        {
+            // Escolhe um bioma
+            BiomeDefinition newBiome = null;
+            if (biomeManager != null)
+                newBiome = biomeManager.PickBiome();
+
+            regionBiomeCache[regionCoord] = newBiome;
+        }
+
+        BiomeDefinition chosenBiome = regionBiomeCache[regionCoord];
+        if (chosenBiome == null) return 1f;
+
+        // "amplitude" no próprio ScriptableObject do bioma
+        return chosenBiome.amplitude;
     }
 }

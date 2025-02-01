@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Test2
   m_EditorClassIdentifier: 
   biomeName: Novo Bioma
-  rarity: 1
-  amplitude: 2
+  rarity: 12
+  amplitude: 32
