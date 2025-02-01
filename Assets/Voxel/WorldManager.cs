@@ -4,7 +4,8 @@
 //
 // Responsável por controlar a geração, carregamento e descarregamento de chunks
 // ao redor do jogador, comunicando-se com o sistema de LOD e demais módulos.
-// Agora inclui um sistema de seed integrado para permitir a regeneração do mundo.
+// Agora inclui um sistema de seed integrado para permitir a regeneração do mundo,
+// e a escolha de biomas via BiomeManager.
 // -------------------------------------------------------------------------
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,6 +17,9 @@ public class WorldManager : MonoBehaviour
     public Transform player;                // Transform do jogador
     public ChunkPool chunkPool;             // Referência ao pool de chunks
     public TerrainNoise terrainNoise;       // Referência à classe de ruído para geração
+
+    // [BIOMA] Referência para escolher biomas
+    public BiomeManager biomeManager;
 
     // Armazena os chunks ativos usando um Dictionary para acesso rápido via coordenada (x,z).
     private Dictionary<Vector2Int, Chunk> activeChunks = new Dictionary<Vector2Int, Chunk>();
@@ -144,6 +148,7 @@ public class WorldManager : MonoBehaviour
 
     /// <summary>
     /// Instancia ou obtém do pool um novo chunk, configura-o e armazena no dicionário.
+    /// Agora também escolhe um bioma para o chunk de forma aleatória.
     /// </summary>
     private void CreateChunk(Vector2Int coord)
     {
@@ -153,7 +158,17 @@ public class WorldManager : MonoBehaviour
         chunkObj.transform.SetParent(this.transform);
 
         Chunk chunkComponent = chunkObj.GetComponent<Chunk>();
-        chunkComponent.InitializeChunk(coord, settings, terrainNoise);
+
+        // [BIOMA] Escolhemos um bioma do BiomeManager
+        BiomeDefinition chosenBiome = null;
+        if (biomeManager != null)
+        {
+            chosenBiome = biomeManager.PickBiome();
+        }
+
+        // Inicializa o chunk com o bioma escolhido
+        chunkComponent.InitializeChunk(coord, settings, terrainNoise, chosenBiome);
+
         activeChunks.Add(coord, chunkComponent);
     }
 

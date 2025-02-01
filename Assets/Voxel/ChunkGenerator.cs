@@ -10,11 +10,20 @@ using UnityEngine;
 public static class ChunkGenerator
 {
     /// <summary>
-    /// Gera os dados de voxels (ChunkData) para a coordenada informada.
+    /// Gera os dados de voxels (ChunkData) para a coordenada informada,
+    /// agora considerando também o bioma escolhido.
     /// </summary>
-    public static ChunkData GenerateChunkData(Vector2Int coord, SettingsVO settings, TerrainNoise terrainNoise)
+    /// <param name="coord">Coordenada do chunk no grid do mundo.</param>
+    /// <param name="settings">Configurações globais do mundo.</param>
+    /// <param name="terrainNoise">ScriptableObject para geração de ruído.</param>
+    /// <param name="biome">O bioma escolhido para este chunk.</param>
+    /// <returns>ChunkData com todos os blocos gerados.</returns>
+    public static ChunkData GenerateChunkData(Vector2Int coord, SettingsVO settings, TerrainNoise terrainNoise, BiomeDefinition biome)
     {
         ChunkData chunkData = new ChunkData(settings.chunkSize, settings.chunkHeight);
+
+        // [BIOMA] Armazena o bioma no chunkData
+        chunkData.SetBiome(biome);
 
         int worldXStart = coord.x * settings.chunkSize;
         int worldZStart = coord.y * settings.chunkSize;
@@ -23,8 +32,8 @@ public static class ChunkGenerator
         {
             for (int z = 0; z < settings.chunkSize; z++)
             {
-                // Calcula a altura via ruído.
-                float height = terrainNoise.GetHeight(worldXStart + x, worldZStart + z, settings);
+                // [BIOMA] Agora passamos o biome para calcular a altura específica
+                float height = terrainNoise.GetHeight(worldXStart + x, worldZStart + z, settings, biome);
 
                 // Limita ao intervalo [0, chunkHeight)
                 int maxHeight = Mathf.Clamp(Mathf.RoundToInt(height), 0, settings.chunkHeight - 1);
