@@ -4,6 +4,7 @@
 //
 // Responsável por controlar a geração, carregamento e descarregamento de chunks
 // ao redor do jogador, comunicando-se com o sistema de LOD e demais módulos.
+// Agora inclui um sistema de seed integrado para permitir a regeneração do mundo.
 // -------------------------------------------------------------------------
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,8 +25,16 @@ public class WorldManager : MonoBehaviour
     public float updateInterval = 0.5f;
     private float timer;
 
+    [Header("Seed do Mundo")]
+    public int worldSeed = 0;              // Seed principal do mundo
+    private int currentSeed;               // Rastreia a seed atual em uso
+
     private void Start()
     {
+        // Define o seed inicial a partir da variável `worldSeed`.
+        SetSeed(worldSeed);
+
+        // Inicia a geração inicial do mundo.
         InitializeWorld();
     }
 
@@ -46,6 +55,40 @@ public class WorldManager : MonoBehaviour
     {
         if (!player) return;
         UpdateChunksAroundPlayer();
+    }
+
+    /// <summary>
+    /// Atualiza e/ou regenera o mundo com base na seed fornecida.
+    /// Esse método pode ser chamado a qualquer momento para mudar a seed em runtime.
+    /// </summary>
+    /// <param name="newSeed">Nova seed para o mundo.</param>
+    public void SetSeed(int newSeed)
+    {
+        // Atualiza a seed do TerrainNoise e o campo de controle local.
+        currentSeed = newSeed;
+        if (terrainNoise != null)
+        {
+            terrainNoise.seed = newSeed;
+        }
+
+        // Caso você queira reinicializar completamente a geração (descarregar e recarregar chunks):
+        RegenerateWorld();
+    }
+
+    /// <summary>
+    /// Limpa todos os chunks atuais e força a recarga com a nova seed.
+    /// </summary>
+    private void RegenerateWorld()
+    {
+        // Remove todos os chunks ativos (devolvendo-os para o pool).
+        List<Vector2Int> coordsParaLiberar = new List<Vector2Int>(activeChunks.Keys);
+        foreach (var coord in coordsParaLiberar)
+        {
+            ReleaseChunk(coord);
+        }
+
+        // Reinicializa o mundo com a seed já definida.
+        InitializeWorld();
     }
 
     /// <summary>
@@ -138,4 +181,3 @@ public class WorldManager : MonoBehaviour
         return new Vector2Int(x, z);
     }
 }
-
