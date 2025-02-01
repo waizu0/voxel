@@ -9,16 +9,21 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Noise/TerrainNoise")]
 public class TerrainNoise : ScriptableObject
 {
+    public int seed = 0; // Seed editável no Inspector
+
     /// <summary>
     /// Retorna a "altura" para uma dada posição (x, z) usando combinações de ruído.
     /// </summary>
     public float GetHeight(float x, float z, SettingsVO settings)
     {
-        // Exemplo simples usando Mathf.PerlinNoise
         float freq = settings.noiseFrequency;
         float amp = settings.noiseAmplitude;
 
-        float noiseValue = Mathf.PerlinNoise(x * freq, z * freq);
+        // Aplica a seed deslocando as coordenadas
+        float noiseX = x * freq + seed;
+        float noiseZ = z * freq + seed;
+
+        float noiseValue = Mathf.PerlinNoise(noiseX, noiseZ);
         float height = noiseValue * amp;
 
         return height;
