@@ -1,8 +1,7 @@
 // -------------------------------------------------------------------------
 // File: Chunk.cs
-// Local: Scripts/Core/Chunk.cs
 //
-// Responsável por encapsular as informações de um chunk.
+// Responsible for encapsulating chunk information.
 // -------------------------------------------------------------------------
 using UnityEngine;
 
@@ -24,10 +23,10 @@ public class Chunk : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
         if (!meshCollider) meshCollider = GetComponent<MeshCollider>();
 
-        // Gera dados usando o ChunkGenerator com "transição suave" via WorldManager
+        // Generates data using ChunkGenerator with "smooth transition" via WorldManager
         chunkData = ChunkGenerator.GenerateChunkData(coord, settings, terrainNoise, worldManager);
 
-        // Constrói a mesh
+        // Builds the mesh
         Mesh mesh = ChunkGenerator.BuildChunkMesh(chunkData);
         meshFilter.sharedMesh = mesh;
 

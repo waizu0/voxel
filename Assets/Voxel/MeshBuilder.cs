@@ -1,6 +1,5 @@
 // -------------------------------------------------------------------------
 // File: MeshBuilder.cs
-// Local: Scripts/Core/MeshBuilder.cs
 //
 // Responsável pela criação efetiva da malha (mesh) de um chunk, analisando
 // cada voxel e gerando faces apenas onde necessário.

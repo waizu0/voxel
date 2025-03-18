@@ -1,23 +1,22 @@
 // -------------------------------------------------------------------------
 // File: SettingsVO.cs
-// Local: Scripts/Utilities/SettingsVO.cs
 //
-// Armazena parâmetros globais de configuração do mundo voxel.
-// Pode ser um ScriptableObject para fácil edição no Unity.
+// Stores global configuration parameters for the voxel world.
+// Can be a ScriptableObject for easy editing in Unity.
 // -------------------------------------------------------------------------
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Settings/SettingsVO")]
 public class SettingsVO : ScriptableObject
 {
-    [Header("Tamanho do Chunk")]
+    [Header("Chunk Size")]
     public int chunkSize = 16;
     public int chunkHeight = 128;
 
-    [Header("Distância de Visão (chunks)")]
+    [Header("View Distance (chunks)")]
     public int viewDistanceInChunks = 8;
 
-    [Header("Parâmetros de Ruído")]
+    [Header("Noise Parameters")]
     public float noiseFrequency = 0.01f;
     public float noiseAmplitude = 20f;
 }

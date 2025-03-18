@@ -1,10 +1,3 @@
-// -------------------------------------------------------------------------
-// File: ChunkPool.cs
-// Local: Scripts/Managers/ChunkPool.cs
-//
-// Implementa pooling de objetos de chunk para reduzir custo de criação/
-// destruição, mantendo um estoque de GameObjects prontos para uso.
-// -------------------------------------------------------------------------
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,10 +17,6 @@ public class ChunkPool : MonoBehaviour
             pool.Enqueue(chunkObj);
         }
     }
-
-    /// <summary>
-    /// Retorna um chunk do pool, ou cria um novo se estiver vazio.
-    /// </summary>
     public GameObject GetChunkObject()
     {
         if (pool.Count > 0)
@@ -41,19 +30,12 @@ public class ChunkPool : MonoBehaviour
             return CreateNewChunkObject();
         }
     }
-
-    /// <summary>
-    /// Devolve o chunk ao pool, desativando-o.
-    /// </summary>
     public void ReleaseChunkObject(GameObject chunkObj)
     {
         chunkObj.SetActive(false);
         pool.Enqueue(chunkObj);
     }
 
-    /// <summary>
-    /// Cria um novo objeto de chunk a partir do prefab.
-    /// </summary>
     private GameObject CreateNewChunkObject()
     {
         GameObject obj = Instantiate(chunkPrefab);

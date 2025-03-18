@@ -1,9 +1,8 @@
 // -------------------------------------------------------------------------
 // File: BiomeManager.cs
-// Local: Scripts/Biomes/BiomeManager.cs
 //
-// Contém uma lista de BiomeDefinition e um método que seleciona
-// aleatoriamente um dos biomas com base na raridade.
+// Contains a list of BiomeDefinition and a method that randomly selects
+// one of the biomes based on rarity.
 // -------------------------------------------------------------------------
 using UnityEngine;
 using System.Collections.Generic;
@@ -11,21 +10,21 @@ using System.Collections.Generic;
 [CreateAssetMenu(menuName = "Biomes/BiomeManager")]
 public class BiomeManager : ScriptableObject
 {
-    [Header("Lista de Biomas")]
+    [Header("Biome List")]
     public List<BiomeDefinition> biomes = new List<BiomeDefinition>();
 
     /// <summary>
-    /// Retorna um bioma aleatório baseado na soma de raridades.
+    /// Returns a random biome based on the sum of rarities.
     /// </summary>
     public BiomeDefinition PickBiome()
     {
         if (biomes == null || biomes.Count == 0)
         {
-            Debug.LogWarning("Nenhum bioma definido no BiomeManager.");
+            Debug.LogWarning("No biomes defined in BiomeManager.");
             return null;
         }
 
-        // Soma todas as raridades
+        // Sum all rarities
         float totalRarity = 0f;
         foreach (var biome in biomes)
         {
@@ -35,7 +34,7 @@ public class BiomeManager : ScriptableObject
             }
         }
 
-        // Escolha aleatória baseada na soma
+        // Random selection based on the total sum
         float randomValue = Random.value * totalRarity;
         float cumulative = 0f;
 
@@ -50,7 +49,7 @@ public class BiomeManager : ScriptableObject
             }
         }
 
-        // Se por algum motivo não cair em nenhum (improvável), retorne o primeiro
+        // If for some reason none is selected (unlikely), return the first one
         return biomes[0];
     }
 }

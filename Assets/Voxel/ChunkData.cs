@@ -1,9 +1,8 @@
 // -------------------------------------------------------------------------
 // File: ChunkData.cs
-// Local: Scripts/Core/ChunkData.cs
 //
-// Armazena as informações cruas do chunk, incluindo IDs de blocos em um array
-// tridimensional, além de métodos de acesso/manipulação.
+// Stores the raw information of the chunk, including block IDs in a
+// three-dimensional array, as well as access/manipulation methods.
 // -------------------------------------------------------------------------
 public class ChunkData
 {
@@ -14,12 +13,12 @@ public class ChunkData
     public int ChunkSize => chunkSize;
     public int ChunkHeight => chunkHeight;
 
-    // [BIOMA] Nova propriedade para armazenar o bioma deste chunk
+    // [BIOME] New property to store the biome of this chunk
     public BiomeDefinition chosenBiome { get; private set; }
 
     /// <summary>
-    /// Construtor do ChunkData. Configura o tamanho e altura do chunk,
-    /// além de criar a matriz de blocos.
+    /// ChunkData constructor. Sets the size and height of the chunk,
+    /// and creates the block matrix.
     /// </summary>
     public ChunkData(int size, int height)
     {
@@ -29,7 +28,7 @@ public class ChunkData
     }
 
     /// <summary>
-    /// Define o bioma escolhido para este ChunkData.
+    /// Sets the chosen biome for this ChunkData.
     /// </summary>
     public void SetBiome(BiomeDefinition biome)
     {
@@ -37,7 +36,7 @@ public class ChunkData
     }
 
     /// <summary>
-    /// Define o ID de bloco em (x,y,z).
+    /// Sets the block ID at (x,y,z).
     /// </summary>
     public void SetBlock(int x, int y, int z, int blockID)
     {
@@ -45,7 +44,7 @@ public class ChunkData
     }
 
     /// <summary>
-    /// Retorna o ID de bloco em (x,y,z).
+    /// Returns the block ID at (x,y,z).
     /// </summary>
     public int GetBlock(int x, int y, int z)
     {

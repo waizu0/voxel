@@ -1,21 +1,20 @@
 // -------------------------------------------------------------------------
 // File: ChunkGenerator.cs
-// Local: Scripts/Core/ChunkGenerator.cs
 //
-// Responsável por criar os dados voxel de cada chunk e também construir
-// a malha (mesh) a partir desses dados.
+// Responsible for creating the voxel data for each chunk and also building
+// the mesh from that data.
 //
-// Agora, em vez de receber um BiomeDefinition fixo, vamos receber
-// o WorldManager (que gerencia regiões e faz interpolação suave).
+// Now, instead of receiving a fixed BiomeDefinition, we receive
+// the WorldManager (which manages regions and performs smooth interpolation).
 // -------------------------------------------------------------------------
 using UnityEngine;
 
 public static class ChunkGenerator
 {
     /// <summary>
-    /// Gera o ChunkData para uma dada coordenada de chunk,
-    /// consultando o WorldManager para obter a amplitude
-    /// do bioma (com transição suave).
+    /// Generates ChunkData for a given chunk coordinate,
+    /// consulting the WorldManager to obtain the biome amplitude
+    /// (with smooth transition).
     /// </summary>
     public static ChunkData GenerateChunkData(
         Vector2Int coord,
@@ -32,35 +31,35 @@ public static class ChunkGenerator
         {
             for (int z = 0; z < settings.chunkSize; z++)
             {
-                // Coordenadas no mundo
+                // World coordinates
                 float worldX = worldXStart + x;
                 float worldZ = worldZStart + z;
 
-                // 1) Obtém a amplitude "blend" do bioma (entre 0 e, por ex., 50 se for montanhoso)
+                // 1) Get the "blended" biome amplitude (e.g., between 0 and 50 for mountainous regions)
                 float biomeAmplitude = worldManager.GetBiomeAmplitudeAt(worldX, worldZ);
 
-                // 2) Calcula ruído base (de 0 a 1, no Perlin) e multiplica pela amplitude final
-                //    (Também multiplicamos por 'settings.noiseAmplitude', se quiser)
+                // 2) Calculate base noise (from 0 to 1 in Perlin) and multiply by the final amplitude
+                //    (Also multiply by 'settings.noiseAmplitude' if needed)
                 float noiseValue = Mathf.PerlinNoise(
                     (worldX * settings.noiseFrequency + terrainNoise.seed),
                     (worldZ * settings.noiseFrequency + terrainNoise.seed)
                 );
 
                 float finalHeight = noiseValue * biomeAmplitude;
-                // Se quiser combinar com "settings.noiseAmplitude" também, faça:
+                // If you also want to combine with "settings.noiseAmplitude", do:
                 // float finalHeight = noiseValue * biomeAmplitude * settings.noiseAmplitude;
 
-                // 3) Converte para inteiro e limita
+                // 3) Convert to integer and clamp
                 int maxY = Mathf.RoundToInt(finalHeight);
                 maxY = Mathf.Clamp(maxY, 0, settings.chunkHeight - 1);
 
-                // 4) Preenche voxel (ex.: tudo até maxY = terra, acima = ar)
+                // 4) Fill voxel (e.g., everything up to maxY = solid, above = air)
                 for (int y = 0; y < settings.chunkHeight; y++)
                 {
                     if (y <= maxY)
-                        chunkData.SetBlock(x, y, z, 1); // bloco
+                        chunkData.SetBlock(x, y, z, 1); // solid block
                     else
-                        chunkData.SetBlock(x, y, z, 0); // ar
+                        chunkData.SetBlock(x, y, z, 0); // air
                 }
             }
         }
@@ -69,7 +68,7 @@ public static class ChunkGenerator
     }
 
     /// <summary>
-    /// Constrói a malha do chunk (igual a antes).
+    /// Builds the chunk mesh (same as before).
     /// </summary>
     public static Mesh BuildChunkMesh(ChunkData chunkData)
     {

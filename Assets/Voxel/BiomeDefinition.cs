@@ -1,23 +1,21 @@
 // -------------------------------------------------------------------------
 // File: BiomeDefinition.cs
-// Local: Scripts/Biomes/BiomeDefinition.cs
-//
-// ScriptableObject que define os parâmetros de um bioma individual,
-// incluindo raridade e propriedades de geração (por enquanto amplitude).
+// ScriptableObject that defines the parameters of an individual biome,
+// including rarity and generation properties (currently amplitude).
 // -------------------------------------------------------------------------
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Biomes/BiomeDefinition")]
 public class BiomeDefinition : ScriptableObject
 {
-    [Header("Identificação do Bioma")]
-    public string biomeName = "Novo Bioma";
+    [Header("Biome Identification")]
+    public string biomeName = "New Biome";
 
-    [Header("Raridade")]
-    [Tooltip("Define a frequência relativa de aparecimento do bioma.")]
+    [Header("Rarity")]
+    [Tooltip("Defines the relative frequency of the biome's appearance.")]
     public float rarity = 1f;
 
-    [Header("Propriedades de Altura")]
-    [Tooltip("Amplitude do ruído para o bioma. Biomas montanhosos tendem a ter valores maiores.")]
+    [Header("Height Properties")]
+    [Tooltip("Noise amplitude for the biome. Mountainous biomes tend to have higher values.")]
     public float amplitude = 20f;
 }
